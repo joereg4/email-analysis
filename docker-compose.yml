@@ -22,6 +22,21 @@ services:
       - "6379:6379"
     restart: unless-stopped
 
+  # Web UI
+  web-ui:
+    build:
+      context: ./web-ui
+      dockerfile: Dockerfile
+    ports:
+      - "8501:8501"
+    environment:
+      - API_BASE_URL=http://api:8080
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - default
+
   # Optional: ClamAV daemon (if needed separately)
   clamav:
     image: clamav/clamav:stable

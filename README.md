@@ -51,19 +51,25 @@ A comprehensive email security analysis platform with advanced scanning capabili
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/joereg4/email-analysis.git
    cd email-analysis
    ```
 
 2. **Start the services**
    ```bash
+   ./setup.sh
+   ```
+   
+   Or manually:
+   ```bash
    docker-compose up -d
    ```
 
 3. **Access the application**
-   - Web UI: Open `src/ui/simple-ui.html` in your browser
-   - API: `http://localhost:8080`
-   - API Docs: `http://localhost:8080/docs`
+   - **Web UI**: `http://localhost:8501` (Streamlit dashboard)
+   - **Simple UI**: Open `src/ui/simple-ui.html` in your browser
+   - **API**: `http://localhost:8080`
+   - **API Docs**: `http://localhost:8080/docs`
 
 ### First Analysis
 
