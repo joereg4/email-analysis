@@ -16,7 +16,7 @@ RUN pip install fastapi uvicorn python-multipart
 RUN mkdir -p /app/data /app/yara_rules
 
 # Copy the scanning API
-COPY scanning-api.py .
+COPY src/api/scanning-api.py .
 
 # Create YARA rules file
 COPY yara_rules/malware_signatures.yar /app/yara_rules/
