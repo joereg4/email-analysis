@@ -350,11 +350,11 @@ def parse_email_content(content: bytes) -> dict:
     try:
         msg = email.message_from_bytes(content)
         
-        subject = msg.get('Subject', 'No Subject')
-        sender = msg.get('From', 'Unknown Sender')
-        recipient = msg.get('To', 'Unknown Recipient')
-        date = msg.get('Date', 'Unknown Date')
-        message_id = msg.get('Message-ID', 'No Message ID')
+        subject = str(msg.get('Subject', 'No Subject'))
+        sender = str(msg.get('From', 'Unknown Sender'))
+        recipient = str(msg.get('To', 'Unknown Recipient'))
+        date = str(msg.get('Date', 'Unknown Date'))
+        message_id = str(msg.get('Message-ID', 'No Message ID'))
         
         body = ""
         if msg.is_multipart():
