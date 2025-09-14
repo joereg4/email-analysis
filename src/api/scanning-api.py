@@ -361,13 +361,19 @@ def parse_email_content(content: bytes) -> dict:
         message_id = str(msg.get('Message-ID', 'No Message ID'))
         
         body = ""
+        html_body = ""
         if msg.is_multipart():
             for part in msg.walk():
-                if part.get_content_type() == "text/plain":
+                content_type = part.get_content_type()
+                if content_type == "text/plain":
                     body = part.get_payload(decode=True).decode('utf-8', errors='ignore')
-                    break
+                elif content_type == "text/html":
+                    html_body = part.get_payload(decode=True).decode('utf-8', errors='ignore')
         else:
             body = msg.get_payload(decode=True).decode('utf-8', errors='ignore')
+        
+        # Combine text and HTML content for analysis
+        combined_body = body + " " + html_body
         
         return {
             "subject": subject,
@@ -375,8 +381,8 @@ def parse_email_content(content: bytes) -> dict:
             "recipient": recipient,
             "date": date,
             "message_id": message_id,
-            "body_preview": body[:200] + "..." if len(body) > 200 else body,
-            "body_length": len(body)
+            "body_preview": combined_body[:200] + "..." if len(combined_body) > 200 else combined_body,
+            "body_length": len(combined_body)
         }
     except Exception as e:
         return {"error": f"Failed to parse email: {str(e)}"}
@@ -390,10 +396,14 @@ def calculate_risk_score(email_info: dict) -> dict:
     sender = email_info.get("sender", "").lower()
     body = email_info.get("body_preview", "").lower()
     
-    # Existing risk patterns...
+    
+    # Enhanced phishing detection patterns
     suspicious_subjects = [
         "urgent", "act now", "limited time", "click here", "verify account",
-        "suspended", "expired", "congratulations", "winner", "free money"
+        "suspended", "expired", "congratulations", "winner", "free money",
+        "final notice", "will be deleted", "take action", "payment failed",
+        "account suspended", "security alert", "immediate action required",
+        "your account", "payment declined", "storage full", "photos deleted"
     ]
     
     for pattern in suspicious_subjects:
@@ -405,11 +415,25 @@ def calculate_risk_score(email_info: dict) -> dict:
         risk_score += 10
         risk_reasons.append("No-reply sender address")
     
+    # Check for suspicious sender patterns
     suspicious_domains = ["gmail.com", "yahoo.com", "hotmail.com"]
     for domain in suspicious_domains:
         if domain in sender:
             risk_score += 5
             risk_reasons.append(f"Personal email domain: {domain}")
+    
+    # Check for random character domains (common in phishing)
+    import re
+    if re.search(r'[a-z]{8,}\.[a-z]{4,}\.[a-z]{2,}', sender):
+        risk_score += 25
+        risk_reasons.append("Suspicious random character domain")
+    
+    # Check for suspicious TLDs
+    suspicious_tlds = [".us", ".nl", ".co.in", ".tk", ".ml", ".ga", ".cf"]
+    for tld in suspicious_tlds:
+        if tld in sender:
+            risk_score += 15
+            risk_reasons.append(f"Suspicious TLD detected: {tld}")
     
     international_domains = [".fj", ".ru", ".cn", ".in", ".br", ".mx", ".ng", ".za"]
     for domain in international_domains:
@@ -423,7 +447,10 @@ def calculate_risk_score(email_info: dict) -> dict:
     
     suspicious_body_patterns = [
         "click here", "verify", "password", "account", "suspended",
-        "expired", "urgent", "act now", "limited time"
+        "expired", "urgent", "act now", "limited time", "payment failed",
+        "update payment", "payment method", "storage full", "photos deleted",
+        "icloud", "apple id", "google account", "microsoft account",
+        "update your", "renew your", "subscription", "billing"
     ]
     
     personal_info_patterns = [
@@ -442,7 +469,26 @@ def calculate_risk_score(email_info: dict) -> dict:
             risk_score += 10
             risk_reasons.append(f"Suspicious body content: '{pattern}'")
     
-    urgency_words = ["urgent", "immediately", "asap", "right now", "act now"]
+    # Service impersonation detection
+    service_impersonation = [
+        "icloud", "apple", "google", "microsoft", "amazon", "paypal", "netflix",
+        "spotify", "dropbox", "onedrive", "gmail", "outlook", "yahoo"
+    ]
+    impersonation_count = sum(1 for service in service_impersonation if service in body.lower())
+    if impersonation_count > 0:
+        risk_score += 20
+        risk_reasons.append(f"Possible service impersonation detected ({impersonation_count} services mentioned)")
+    
+    # Suspicious link detection
+    if "storage.googleapis.com" in body or "googleapis.com" in body:
+        risk_score += 30
+        risk_reasons.append("Suspicious Google storage link detected")
+    
+    if "virus.html" in body or "malware" in body.lower():
+        risk_score += 25
+        risk_reasons.append("Suspicious link containing 'virus' or 'malware'")
+    
+    urgency_words = ["urgent", "immediately", "asap", "right now", "act now", "final notice", "will be deleted"]
     urgency_count = sum(1 for word in urgency_words if word in body)
     if urgency_count >= 2:
         risk_score += 20
@@ -492,40 +538,51 @@ async def upload_file(file: UploadFile = File(...)):
             # Calculate risk score
             risk_analysis = calculate_risk_score(email_info)
             result["risk_analysis"] = risk_analysis
-            
-            # Perform advanced scanning
-            print(f"Scanning {file.filename} with ClamAV...")
-            clamav_result = scan_with_clamav(content, file.filename)
-            result["clamav_result"] = clamav_result
-            
-            print(f"Scanning {file.filename} with YARA...")
-            yara_result = scan_with_yara(content, file.filename)
-            result["yara_result"] = yara_result
-            
-            # Update risk score based on scanning results
-            if clamav_result.get("status") == "infected":
-                risk_analysis["risk_score"] = 100
-                risk_analysis["risk_level"] = "CRITICAL"
-                risk_analysis["risk_reasons"].append(f"VIRUS DETECTED: {clamav_result.get('threat_name', 'Unknown threat')}")
-            
-            if yara_result.get("status") == "matched":
-                risk_analysis["risk_score"] = min(risk_analysis["risk_score"] + 30, 100)
-                if risk_analysis["risk_level"] != "CRITICAL":
-                    risk_analysis["risk_level"] = "HIGH"
-                risk_analysis["risk_reasons"].append(f"YARA MATCH: {len(yara_result.get('matches', []))} malicious patterns detected")
-            
-            result["message"] += f", parsed email content, calculated risk score ({risk_analysis['risk_level']})"
-            result["message"] += f", scanned with ClamAV ({clamav_result['status']}) and YARA ({yara_result['status']})"
-            
-            # Save to database
-            try:
-                analysis_id = save_analysis_result(result)
-                result["analysis_id"] = analysis_id
-                result["message"] += f" (saved to database as ID {analysis_id})"
-            except Exception as e:
-                result["database_error"] = f"Failed to save to database: {str(e)}"
         else:
             result["message"] += " and attempted email parsing (failed)"
+        
+        # Perform advanced scanning (regardless of email parsing success)
+        print(f"Scanning {file.filename} with ClamAV...")
+        clamav_result = scan_with_clamav(content, file.filename)
+        result["clamav_result"] = clamav_result
+        
+        print(f"Scanning {file.filename} with YARA...")
+        yara_result = scan_with_yara(content, file.filename)
+        result["yara_result"] = yara_result
+        
+        # Update risk score based on scanning results (if we have risk analysis)
+        if "risk_analysis" in result:
+            if clamav_result.get("status") == "infected":
+                result["risk_analysis"]["risk_score"] = 100
+                result["risk_analysis"]["risk_level"] = "CRITICAL"
+                result["risk_analysis"]["risk_reasons"].append(f"VIRUS DETECTED: {clamav_result.get('threat_name', 'Unknown threat')}")
+            
+            if yara_result.get("status") == "matched":
+                result["risk_analysis"]["risk_score"] = min(result["risk_analysis"]["risk_score"] + 30, 100)
+                if result["risk_analysis"]["risk_level"] != "CRITICAL":
+                    result["risk_analysis"]["risk_level"] = "HIGH"
+                result["risk_analysis"]["risk_reasons"].append(f"YARA MATCH: {len(yara_result.get('matches', []))} malicious patterns detected")
+            
+            result["message"] += f", parsed email content, calculated risk score ({result['risk_analysis']['risk_level']})"
+        
+        result["message"] += f", scanned with ClamAV ({clamav_result['status']}) and YARA ({yara_result['status']})"
+        
+        # Save to database
+        try:
+            analysis_data = {
+                "filename": file.filename,
+                "file_size": file_size,
+                "content_type": file.content_type,
+                **email_info,
+                **result.get("risk_analysis", {"risk_score": 0, "risk_level": "SAFE", "risk_reasons": [], "total_checks": 0}),
+                "clamav_result": json.dumps(clamav_result),
+                "yara_result": json.dumps(yara_result)
+            }
+            analysis_id = save_analysis_result(analysis_data)
+            result["analysis_id"] = analysis_id
+            result["message"] += f" (saved to database as ID {analysis_id})"
+        except Exception as e:
+            result["database_error"] = f"Failed to save to database: {str(e)}"
     else:
         result["message"] += " (not an .eml file, no email parsing performed)"
     
