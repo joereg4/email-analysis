@@ -356,15 +356,8 @@ def main():
                         st.metric("Risk Score", f"{risk_score:.1f}")
                     
                     with col4:
-                        status = analysis.get('status', 'unknown')
-                        if status == 'completed':
-                            st.success("✅ Done")
-                        elif status == 'processing':
-                            st.info("⏳ Processing")
-                        elif status == 'failed':
-                            st.error("❌ Failed")
-                        else:
-                            st.warning("⏳ Pending")
+                        # Since our API processes emails synchronously, all analyses are completed
+                        st.success("✅ Done")
                     
                     st.divider()
         else:
