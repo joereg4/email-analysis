@@ -1,0 +1,34 @@
+FROM python:3.11-slim
+
+# Install system dependencies including ClamAV and YARA
+RUN apt-get update && apt-get install -y \
+    clamav \
+    clamav-daemon \
+    yara \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install Python dependencies
+RUN pip install fastapi uvicorn python-multipart
+
+# Create directories
+RUN mkdir -p /app/data /app/yara_rules
+
+# Copy the scanning API
+COPY scanning-api.py .
+
+# Create YARA rules file
+COPY yara_rules/malware_signatures.yar /app/yara_rules/
+
+# Update ClamAV database
+RUN freshclam
+
+# Start ClamAV daemon
+RUN service clamav-daemon start
+
+# Expose port
+EXPOSE 8080
+
+# Run the API
+CMD ["python", "scanning-api.py"]

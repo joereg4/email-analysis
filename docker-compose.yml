@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: scripts/Dockerfile.scanning
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+      - ./yara_rules:/app/yara_rules
+    environment:
+      - DATABASE_URL=sqlite:///app/data/email_analysis.db
+    restart: unless-stopped
+
+  # Optional: Redis for future job queue
+  redis:
+    image: redis:7-alpine
+    platform: linux/amd64
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # Optional: ClamAV daemon (if needed separately)
+  clamav:
+    image: clamav/clamav:stable
+    platform: linux/amd64
+    ports:
+      - "3310:3310"
+    volumes:
+      - clamav_data:/var/lib/clamav
+    restart: unless-stopped
+
+volumes:
+  clamav_data:

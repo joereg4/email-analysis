@@ -1,0 +1,18 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+RUN pip install fastapi uvicorn python-multipart
+
+# Create data directory
+RUN mkdir -p /app/data
+
+# Copy the database API
+COPY database-api.py .
+
+# Expose port
+EXPOSE 8080
+
+# Run the API
+CMD ["python", "database-api.py"]

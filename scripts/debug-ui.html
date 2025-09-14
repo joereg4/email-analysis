@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Email Analysis</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { background: #d4edda; }
+        .error { background: #f8d7da; }
+        button { padding: 10px 20px; margin: 5px; }
+        #output { margin-top: 20px; padding: 15px; background: #f8f9fa; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Email Analysis API</h1>
+    
+    <div class="test">
+        <h3>Test 1: API Health Check</h3>
+        <button onclick="testHealth()">Test API Health</button>
+        <div id="health-result"></div>
+    </div>
+    
+    <div class="test">
+        <h3>Test 2: File Upload</h3>
+        <input type="file" id="fileInput" accept=".eml,.txt">
+        <button onclick="testUpload()">Test Upload</button>
+        <div id="upload-result"></div>
+    </div>
+    
+    <div class="test">
+        <h3>Test 3: CORS Preflight</h3>
+        <button onclick="testCORS()">Test CORS</button>
+        <div id="cors-result"></div>
+    </div>
+    
+    <div id="output"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        
+        function log(message) {
+            const output = document.getElementById('output');
+            output.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+            console.log(message);
+        }
+        
+        async function testHealth() {
+            log('Testing API health...');
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                document.getElementById('health-result').innerHTML = 
+                    `<div class="success">✅ API is running: ${data.message}</div>`;
+                log('Health check successful');
+            } catch (error) {
+                document.getElementById('health-result').innerHTML = 
+                    `<div class="error">❌ Health check failed: ${error.message}</div>`;
+                log('Health check failed: ' + error.message);
+            }
+        }
+        
+        async function testUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file first');
+                return;
+            }
+            
+            log(`Testing upload with file: ${file.name}`);
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                log('Sending POST request...');
+                const response = await fetch(`${API_BASE}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                log(`Response status: ${response.status}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log('Upload successful!');
+                log('Response: ' + JSON.stringify(data, null, 2));
+                
+                document.getElementById('upload-result').innerHTML = 
+                    `<div class="success">✅ Upload successful! Check console for details.</div>`;
+                    
+            } catch (error) {
+                log('Upload failed: ' + error.message);
+                document.getElementById('upload-result').innerHTML = 
+                    `<div class="error">❌ Upload failed: ${error.message}</div>`;
+            }
+        }
+        
+        async function testCORS() {
+            log('Testing CORS preflight...');
+            try {
+                // This will trigger a CORS preflight request
+                const response = await fetch(`${API_BASE}/`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                document.getElementById('cors-result').innerHTML = 
+                    `<div class="success">✅ CORS is working</div>`;
+                log('CORS test successful');
+            } catch (error) {
+                document.getElementById('cors-result').innerHTML = 
+                    `<div class="error">❌ CORS failed: ${error.message}</div>`;
+                log('CORS test failed: ' + error.message);
+            }
+        }
+        
+        // Auto-run health check on page load
+        window.onload = function() {
+            log('Page loaded, testing API health...');
+            testHealth();
+        };
+    </script>
+</body>
+</html>

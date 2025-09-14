@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Analysis Tool</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+        .upload-area:hover {
+            border-color: #007bff;
+        }
+        .upload-area.dragover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            display: block;
+        }
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .email-info {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .risk-score {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .risk-safe {
+            background: #d4edda;
+            color: #155724;
+        }
+        .risk-low {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .risk-medium {
+            background: #ffeaa7;
+            color: #6c5ce7;
+        }
+        .risk-high {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .risk-reasons {
+            margin-top: 10px;
+        }
+        .risk-reasons ul {
+            margin: 5px 0;
+            padding-left: 20px;
+        }
+        .loading {
+            text-align: center;
+            color: #6c757d;
+        }
+        .sample-files {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .sample-files h3 {
+            margin-top: 0;
+        }
+        .sample-file {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 12px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        .sample-file:hover {
+            background: #0056b3;
+        }
+        .scanning-results {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+        .scan-result {
+            margin: 10px 0;
+            padding: 12px;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        .scan-clean {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+        .scan-infected {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+        .scan-error {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+            color: #856404;
+        }
+        .yara-matches {
+            margin-top: 8px;
+        }
+        .yara-matches ul {
+            margin: 5px 0;
+            padding-left: 20px;
+        }
+        .history-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+        .history-item h4 {
+            margin-top: 0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📧 Email Analysis Tool</h1>
+        
+        <div class="upload-area" id="uploadArea">
+            <p>📁 Drag and drop an email file here, or click to select</p>
+            <input type="file" id="fileInput" accept=".eml,.txt" style="display: none;">
+            <button onclick="document.getElementById('fileInput').click()">Choose File</button>
+        </div>
+        
+        <div style="text-align: center;">
+            <button id="analyzeBtn" onclick="analyzeEmail()" disabled>Analyze Email</button>
+            <button onclick="clearResults()">Clear</button>
+            <button onclick="showHistory()">View History</button>
+        </div>
+        
+        <div class="sample-files">
+            <h3>📋 Sample Files for Testing:</h3>
+            <a href="#" class="sample-file" onclick="loadSampleFile('safe_email.eml')">Safe Email</a>
+            <a href="#" class="sample-file" onclick="loadSampleFile('suspicious_email.eml')">Suspicious Email</a>
+            <a href="#" class="sample-file" onclick="loadSampleFile('sample.eml')">Basic Email</a>
+        </div>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        let selectedFile = null;
+
+        // File input handling
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        
+        // Drag and drop handling
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            selectedFile = file;
+            document.getElementById('analyzeBtn').disabled = false;
+            uploadArea.innerHTML = `
+                <p>✅ Selected: <strong>${file.name}</strong></p>
+                <p>Size: ${(file.size / 1024).toFixed(1)} KB</p>
+                <button onclick="chooseDifferentFile()">Choose Different File</button>
+            `;
+        }
+        
+        function chooseDifferentFile() {
+            // Create a new file input and trigger it
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.eml,.txt';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    handleFile(file);
+                }
+            };
+            input.click();
+        }
+
+        function loadSampleFile(filename) {
+            // Create a simple file input for sample files
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.eml,.txt';
+            input.onchange = function(e) {
+                // This won't work for local files, but shows the concept
+                alert(`To test with ${filename}, please download it from the project directory and upload it manually.`);
+            };
+            input.click();
+        }
+
+        async function analyzeEmail() {
+            if (!selectedFile) {
+                showResult('Please select a file first.', 'error');
+                return;
+            }
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="loading">🔄 Analyzing email...</div>';
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+
+            console.log('Starting analysis for file:', selectedFile.name);
+            console.log('API URL:', `${API_BASE}/upload`);
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                console.log('Sending request to API...');
+                const response = await fetch(`${API_BASE}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (data.success) {
+                    console.log('Analysis successful, displaying results...');
+                    displayResults(data);
+                } else {
+                    console.log('Analysis failed:', data);
+                    showResult(`Analysis failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error during analysis:', error);
+                showResult(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function displayResults(data) {
+            const resultDiv = document.getElementById('result');
+            let html = '<div class="result success">';
+            
+            html += `<h3>✅ Analysis Complete</h3>`;
+            html += `<p><strong>File:</strong> ${data.filename} (${data.file_size} bytes)</p>`;
+            
+            if (data.email_info) {
+                html += '<div class="email-info">';
+                html += '<h4>📧 Email Information</h4>';
+                html += `<p><strong>Subject:</strong> ${data.email_info.subject}</p>`;
+                html += `<p><strong>From:</strong> ${data.email_info.sender}</p>`;
+                html += `<p><strong>To:</strong> ${data.email_info.recipient}</p>`;
+                html += `<p><strong>Date:</strong> ${data.email_info.date}</p>`;
+                html += `<p><strong>Body Preview:</strong> ${data.email_info.body_preview}</p>`;
+                html += '</div>';
+                
+                if (data.risk_analysis) {
+                    const risk = data.risk_analysis;
+                    const riskClass = `risk-${risk.risk_level.toLowerCase()}`;
+                    
+                    html += `<div class="risk-score ${riskClass}">`;
+                    html += `<h4>⚠️ Risk Analysis</h4>`;
+                    html += `<p><strong>Risk Level:</strong> ${risk.risk_level}</p>`;
+                    html += `<p><strong>Risk Score:</strong> ${risk.risk_score}/100</p>`;
+                    
+                    if (risk.risk_reasons && risk.risk_reasons.length > 0) {
+                        html += '<div class="risk-reasons">';
+                        html += '<p><strong>Risk Reasons:</strong></p>';
+                        html += '<ul>';
+                        risk.risk_reasons.forEach(reason => {
+                            html += `<li>${reason}</li>`;
+                        });
+                        html += '</ul>';
+                        html += '</div>';
+                    } else {
+                        html += '<p>✅ No suspicious patterns detected</p>';
+                    }
+                    html += '</div>';
+                }
+                
+                // Add scanning results
+                if (data.clamav_result || data.yara_result) {
+                    html += '<div class="scanning-results">';
+                    html += '<h4>🔍 Security Scanning Results</h4>';
+                    
+                    // ClamAV results
+                    if (data.clamav_result) {
+                        const clamav = data.clamav_result;
+                        const clamavClass = clamav.status === 'clean' ? 'scan-clean' : 
+                                           clamav.status === 'infected' ? 'scan-infected' : 'scan-error';
+                        html += `<div class="scan-result ${clamavClass}">`;
+                        html += `<h5>🦠 ClamAV Antivirus</h5>`;
+                        html += `<p><strong>Status:</strong> ${clamav.status.toUpperCase()}</p>`;
+                        html += `<p><strong>Message:</strong> ${clamav.message}</p>`;
+                        if (clamav.details) {
+                            html += `<p><strong>Details:</strong> ${clamav.details}</p>`;
+                        }
+                        html += '</div>';
+                    }
+                    
+                    // YARA results
+                    if (data.yara_result) {
+                        const yara = data.yara_result;
+                        const yaraClass = yara.status === 'clean' ? 'scan-clean' : 
+                                         yara.status === 'matched' ? 'scan-infected' : 'scan-error';
+                        html += `<div class="scan-result ${yaraClass}">`;
+                        html += `<h5>🎯 YARA Rules</h5>`;
+                        html += `<p><strong>Status:</strong> ${yara.status.toUpperCase()}</p>`;
+                        html += `<p><strong>Message:</strong> ${yara.message}</p>`;
+                        if (yara.details) {
+                            html += `<p><strong>Details:</strong> ${yara.details}</p>`;
+                        }
+                        if (yara.matches && yara.matches.length > 0) {
+                            html += '<div class="yara-matches">';
+                            html += '<p><strong>Rule Matches:</strong></p>';
+                            html += '<ul>';
+                            yara.matches.forEach(match => {
+                                html += `<li>${match.rule}: ${match.description}</li>`;
+                            });
+                            html += '</ul>';
+                            html += '</div>';
+                        }
+                        html += '</div>';
+                    }
+                    
+                    html += '</div>';
+                }
+            } else {
+                html += `<p>ℹ️ ${data.message}</p>`;
+            }
+            
+            html += '</div>';
+            resultDiv.innerHTML = html;
+            resultDiv.style.display = 'block';
+        }
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="result ${type}">${message}</div>`;
+            resultDiv.style.display = 'block';
+        }
+
+        function clearResults() {
+            document.getElementById('result').style.display = 'none';
+            selectedFile = null;
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('fileInput').value = '';
+            uploadArea.innerHTML = `
+                <p>📁 Drag and drop an email file here, or click to select</p>
+                <input type="file" id="fileInput" accept=".eml,.txt" style="display: none;">
+                <button onclick="document.getElementById('fileInput').click()">Choose File</button>
+            `;
+            // Re-add event listeners
+            document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        }
+        
+        async function showHistory() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="loading">🔄 Loading analysis history...</div>';
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            
+            try {
+                const response = await fetch(`${API_BASE}/history`);
+                const data = await response.json();
+                
+                if (data.history && data.history.length > 0) {
+                    let html = '<div class="result success">';
+                    html += '<h3>📊 Analysis History</h3>';
+                    html += `<p>Showing ${data.count} recent analyses:</p>`;
+                    
+                    data.history.forEach(analysis => {
+                        const riskClass = `risk-${analysis.risk_level.toLowerCase()}`;
+                        html += '<div class="history-item">';
+                        html += `<h4>ID ${analysis.id}: ${analysis.filename}</h4>`;
+                        html += `<p><strong>Subject:</strong> ${analysis.subject}</p>`;
+                        html += `<p><strong>From:</strong> ${analysis.sender}</p>`;
+                        html += `<p><strong>Risk:</strong> <span class="${riskClass}">${analysis.risk_level} (${analysis.risk_score}/100)</span></p>`;
+                        html += `<p><strong>ClamAV:</strong> ${analysis.clamav_result.status} | <strong>YARA:</strong> ${analysis.yara_result.status}</p>`;
+                        html += `<p><strong>Analyzed:</strong> ${analysis.created_at}</p>`;
+                        html += `<button onclick="viewAnalysis(${analysis.id})" style="margin-top: 5px;">View Details</button>`;
+                        html += '</div>';
+                    });
+                    
+                    html += '</div>';
+                    resultDiv.innerHTML = html;
+                } else {
+                    showResult('No analysis history found.', 'error');
+                }
+            } catch (error) {
+                showResult(`Error loading history: ${error.message}`, 'error');
+            }
+        }
+        
+        async function viewAnalysis(analysisId) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="loading">🔄 Loading analysis details...</div>';
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            
+            try {
+                const response = await fetch(`${API_BASE}/analysis/${analysisId}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    showResult(`Error: ${data.error}`, 'error');
+                    return;
+                }
+                
+                // Display the analysis details using the same format as upload results
+                displayResults(data);
+            } catch (error) {
+                showResult(`Error loading analysis: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
