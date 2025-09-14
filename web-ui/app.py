@@ -125,22 +125,24 @@ def get_analysis_details(analysis_id):
 def get_risk_color(risk_level):
     """Get color for risk level"""
     colors = {
-        'low': '#00aa00',
-        'medium': '#ff8800',
-        'high': '#ff4444',
-        'critical': '#aa0000'
+        'safe': '#00aa00',      # Green
+        'low': '#88cc00',       # Light green
+        'medium': '#ff8800',    # Orange
+        'high': '#ff4444',      # Red
+        'critical': '#aa0000'   # Dark red
     }
-    return colors.get(risk_level, '#666666')
+    return colors.get(risk_level.lower(), '#666666')
 
 def get_risk_icon(risk_level):
     """Get icon for risk level"""
     icons = {
-        'low': '✅',
-        'medium': '⚠️',
-        'high': '🚨',
-        'critical': '💀'
+        'safe': '✅',           # Green checkmark
+        'low': '🟢',            # Green circle
+        'medium': '⚠️',         # Warning triangle
+        'high': '🚨',           # Red siren
+        'critical': '💀'        # Skull
     }
-    return icons.get(risk_level, '❓')
+    return icons.get(risk_level.lower(), '❓')
 
 # Main App
 def main():
@@ -195,7 +197,8 @@ def main():
                             risk_level = risk_analysis.get('risk_level', 'unknown')
                             risk_score = risk_analysis.get('risk_score', 0)
                             
-                            st.markdown(f"**Risk Level:** {get_risk_icon(risk_level)} {risk_level.upper()}")
+                            risk_color = get_risk_color(risk_level)
+                            st.markdown(f"**Risk Level:** {get_risk_icon(risk_level)} <span style='color: {risk_color}; font-weight: bold;'>{risk_level.upper()}</span>", unsafe_allow_html=True)
                             st.markdown(f"**Risk Score:** {risk_score}/100")
                             
                             # Risk reasons
@@ -329,7 +332,8 @@ def main():
                     with col2:
                         risk_level = analysis.get('risk_level', 'unknown')
                         risk_icon = get_risk_icon(risk_level)
-                        st.markdown(f"**{risk_icon} {risk_level.upper()}**")
+                        risk_color = get_risk_color(risk_level)
+                        st.markdown(f"**{risk_icon} <span style='color: {risk_color}; font-weight: bold;'>{risk_level.upper()}</span>**", unsafe_allow_html=True)
                     
                     with col3:
                         risk_score = analysis.get('risk_score', 0)
@@ -410,6 +414,10 @@ def main():
                 else:
                     formatted_date = date
                 
+                # Get color for risk level
+                risk_color = get_risk_color(risk_level)
+                
+                # Create title with colored risk level
                 title = f"📧 {subject} | {formatted_date} | {risk_icon} {risk_level.upper()}"
                 
                 with st.expander(title):
