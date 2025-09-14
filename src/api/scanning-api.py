@@ -82,8 +82,10 @@ def scan_with_clamav(file_content: bytes, filename: str) -> Dict:
     Returns scan results including virus detection
     """
     try:
+        # Sanitize filename for temporary file creation
+        safe_filename = "".join(c for c in filename if c.isalnum() or c in "._-")[:50]
         # Create temporary file for scanning
-        with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{filename}") as temp_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{safe_filename}") as temp_file:
             temp_file.write(file_content)
             temp_file_path = temp_file.name
         
@@ -141,8 +143,10 @@ def scan_with_yara(file_content: bytes, filename: str) -> Dict:
     Returns rule matches and patterns found
     """
     try:
+        # Sanitize filename for temporary file creation
+        safe_filename = "".join(c for c in filename if c.isalnum() or c in "._-")[:50]
         # Create temporary file for scanning
-        with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{filename}") as temp_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{safe_filename}") as temp_file:
             temp_file.write(file_content)
             temp_file_path = temp_file.name
         
