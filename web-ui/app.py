@@ -174,6 +174,72 @@ def main():
                     result = upload_email(uploaded_file)
                     if result:
                         st.success(f"✅ Email uploaded successfully! Analysis ID: {result.get('analysis_id')}")
+                        
+                        # Display results immediately
+                        st.header("📊 Analysis Results")
+                        
+                        # Basic info
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.subheader("📧 Email Information")
+                            st.write(f"**Filename:** {result.get('filename', 'Unknown')}")
+                            st.write(f"**Subject:** {result.get('email_info', {}).get('subject', 'No subject')}")
+                            st.write(f"**From:** {result.get('email_info', {}).get('sender', 'Unknown sender')}")
+                            st.write(f"**To:** {result.get('email_info', {}).get('recipient', 'Unknown recipient')}")
+                            st.write(f"**Date:** {result.get('email_info', {}).get('date', 'Unknown date')}")
+                        
+                        with col2:
+                            st.subheader("🎯 Risk Assessment")
+                            risk_analysis = result.get('risk_analysis', {})
+                            risk_level = risk_analysis.get('risk_level', 'unknown')
+                            risk_score = risk_analysis.get('risk_score', 0)
+                            
+                            st.markdown(f"**Risk Level:** {get_risk_icon(risk_level)} {risk_level.upper()}")
+                            st.markdown(f"**Risk Score:** {risk_score}/100")
+                            
+                            # Risk reasons
+                            risk_reasons = risk_analysis.get('risk_reasons', [])
+                            if risk_reasons:
+                                st.write("**Risk Factors:**")
+                                for reason in risk_reasons:
+                                    st.write(f"• {reason}")
+                        
+                        # Scanning results
+                        st.subheader("🔍 Security Scan Results")
+                        col3, col4 = st.columns(2)
+                        
+                        with col3:
+                            st.write("**ClamAV Antivirus:**")
+                            clamav = result.get('clamav_result', {})
+                            status = clamav.get('status', 'unknown')
+                            if status == 'clean':
+                                st.success("✅ Clean - No threats detected")
+                            elif status == 'infected':
+                                st.error("🚨 Infected - Malware detected!")
+                            else:
+                                st.warning(f"⚠️ {status}")
+                            st.write(f"Details: {clamav.get('message', 'No details')}")
+                        
+                        with col4:
+                            st.write("**YARA Rules:**")
+                            yara = result.get('yara_result', {})
+                            status = yara.get('status', 'unknown')
+                            if status == 'clean':
+                                st.success("✅ Clean - No rule matches")
+                            elif status == 'matched':
+                                st.error("🚨 Matched - Suspicious patterns detected!")
+                            else:
+                                st.warning(f"⚠️ {status}")
+                            st.write(f"Details: {yara.get('message', 'No details')}")
+                        
+                        # Email content preview
+                        email_info = result.get('email_info', {})
+                        body_preview = email_info.get('body_preview', '')
+                        if body_preview:
+                            st.subheader("📄 Email Content Preview")
+                            st.text_area("Body Preview", body_preview, height=200, disabled=True)
+                        
                         st.rerun()
                     else:
                         st.error("❌ Upload failed!")
@@ -340,22 +406,6 @@ def main():
                         if st.button(f"🔍 View Details", key=f"view_{analysis['id']}"):
                             st.session_state.selected_analysis = analysis['id']
                             st.rerun()
-                        
-                        if st.button(f"🚫 Quarantine", key=f"quarantine_{analysis['id']}"):
-                            reason = st.text_input("Quarantine reason:", key=f"reason_{analysis['id']}")
-                            if reason:
-                                if quarantine_analysis(analysis['id'], reason):
-                                    st.success("Email quarantined!")
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to quarantine email")
-                        
-                        if st.button(f"🗑️ Delete", key=f"delete_{analysis['id']}"):
-                            if delete_analysis(analysis['id']):
-                                st.success("Email deleted!")
-                                st.rerun()
-                            else:
-                                st.error("Failed to delete email")
         else:
             st.info("No analyses found. Upload an email to get started!")
     
