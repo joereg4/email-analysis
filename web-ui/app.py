@@ -388,7 +388,31 @@ def main():
             
             # Display analyses
             for analysis in filtered_analyses:
-                with st.expander(f"📧 {analysis.get('filename', 'Unknown')} - {get_risk_icon(analysis.get('risk_level', 'unknown'))} {analysis.get('risk_level', 'unknown').upper()}"):
+                # Create a more informative title with subject and date
+                subject = analysis.get('subject', 'No subject')
+                date = analysis.get('created_at', 'Unknown date')
+                risk_level = analysis.get('risk_level', 'unknown')
+                risk_icon = get_risk_icon(risk_level)
+                
+                # Truncate subject if too long
+                if len(subject) > 50:
+                    subject = subject[:47] + "..."
+                
+                # Format date to be more readable
+                if date != 'Unknown date':
+                    try:
+                        # Parse and reformat date
+                        from datetime import datetime
+                        parsed_date = datetime.fromisoformat(date.replace('Z', '+00:00'))
+                        formatted_date = parsed_date.strftime('%m/%d %H:%M')
+                    except:
+                        formatted_date = date
+                else:
+                    formatted_date = date
+                
+                title = f"📧 {subject} | {formatted_date} | {risk_icon} {risk_level.upper()}"
+                
+                with st.expander(title):
                     col1, col2 = st.columns([2, 1])
                     
                     with col1:
