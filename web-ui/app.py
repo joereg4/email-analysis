@@ -404,8 +404,88 @@ def main():
                     with col2:
                         # Action buttons
                         if st.button(f"🔍 View Details", key=f"view_{analysis['id']}"):
-                            st.session_state.selected_analysis = analysis['id']
+                            # Toggle expanded view for this analysis
+                            if f"expanded_{analysis['id']}" not in st.session_state:
+                                st.session_state[f"expanded_{analysis['id']}"] = True
+                            else:
+                                st.session_state[f"expanded_{analysis['id']}"] = not st.session_state[f"expanded_{analysis['id']}"]
                             st.rerun()
+                
+                # Show expanded details if this analysis is expanded
+                if f"expanded_{analysis['id']}" in st.session_state and st.session_state[f"expanded_{analysis['id']}"]:
+                    st.markdown("---")
+                    st.subheader(f"🔍 Detailed Analysis: {analysis.get('subject', 'No Subject')}")
+                    
+                    # Get full analysis details
+                    full_analysis = get_analysis_details(analysis['id'])
+                    if full_analysis:
+                        # Basic info
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.write("**📧 Email Information**")
+                            st.write(f"**Filename:** {full_analysis.get('filename', 'Unknown')}")
+                            st.write(f"**Subject:** {full_analysis.get('subject', 'No subject')}")
+                            st.write(f"**From:** {full_analysis.get('sender', 'Unknown sender')}")
+                            st.write(f"**To:** {full_analysis.get('recipient', 'Unknown recipient')}")
+                            st.write(f"**Date:** {full_analysis.get('date', 'Unknown date')}")
+                            st.write(f"**Message ID:** {full_analysis.get('message_id', 'Unknown')}")
+                        
+                        with col2:
+                            st.write("**🎯 Risk Assessment**")
+                            risk_level = full_analysis.get('risk_level', 'unknown')
+                            risk_score = full_analysis.get('risk_score', 0)
+                            
+                            st.markdown(f"**Risk Level:** {get_risk_icon(risk_level)} {risk_level.upper()}")
+                            st.markdown(f"**Risk Score:** {risk_score}/100")
+                            
+                            # Risk reasons
+                            risk_reasons = full_analysis.get('risk_reasons', [])
+                            if risk_reasons:
+                                st.write("**Risk Factors:**")
+                                for reason in risk_reasons:
+                                    st.write(f"• {reason}")
+                        
+                        # Scanning results
+                        st.write("**🔍 Security Scan Results**")
+                        col3, col4 = st.columns(2)
+                        
+                        with col3:
+                            st.write("**ClamAV Antivirus:**")
+                            clamav = full_analysis.get('clamav_result', {})
+                            status = clamav.get('status', 'unknown')
+                            if status == 'clean':
+                                st.success("✅ Clean - No threats detected")
+                            elif status == 'infected':
+                                st.error("🚨 Infected - Malware detected!")
+                            else:
+                                st.warning(f"⚠️ {status}")
+                            st.write(f"Details: {clamav.get('message', 'No details')}")
+                        
+                        with col4:
+                            st.write("**YARA Rules:**")
+                            yara = full_analysis.get('yara_result', {})
+                            status = yara.get('status', 'unknown')
+                            if status == 'clean':
+                                st.success("✅ Clean - No rule matches")
+                            elif status == 'matched':
+                                st.error("🚨 Matched - Suspicious patterns detected!")
+                            else:
+                                st.warning(f"⚠️ {status}")
+                            st.write(f"Details: {yara.get('message', 'No details')}")
+                        
+                        # Email content preview
+                        body_preview = full_analysis.get('body_preview', '')
+                        if body_preview:
+                            st.write("**📄 Email Content Preview**")
+                            st.text_area("Body Preview", body_preview, height=200, disabled=True, key=f"preview_{analysis['id']}")
+                        
+                        # Close button
+                        if st.button(f"❌ Close Details", key=f"close_{analysis['id']}"):
+                            st.session_state[f"expanded_{analysis['id']}"] = False
+                            st.rerun()
+                    else:
+                        st.error("Failed to load detailed analysis")
         else:
             st.info("No analyses found. Upload an email to get started!")
     
