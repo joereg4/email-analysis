@@ -223,11 +223,19 @@ def save_analysis_result(data):
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
-    # Extract data
-    email_info = data.get('email_info', {})
-    risk_analysis = data.get('risk_analysis', {})
-    clamav_result = data.get('clamav_result', {})
-    yara_result = data.get('yara_result', {})
+    # Handle both nested and flattened data structures
+    if 'email_info' in data and 'risk_analysis' in data:
+        # Nested structure
+        email_info = data.get('email_info', {})
+        risk_analysis = data.get('risk_analysis', {})
+        clamav_result = data.get('clamav_result', {})
+        yara_result = data.get('yara_result', {})
+    else:
+        # Flattened structure (from upload)
+        email_info = data
+        risk_analysis = data
+        clamav_result = data.get('clamav_result', {})
+        yara_result = data.get('yara_result', {})
     
     cursor.execute('''
         INSERT INTO email_analyses (
@@ -250,8 +258,8 @@ def save_analysis_result(data):
         risk_analysis.get('risk_level', 'UNKNOWN'),
         json.dumps(risk_analysis.get('risk_reasons', [])),
         risk_analysis.get('total_checks', 0),
-        json.dumps(clamav_result),
-        json.dumps(yara_result)
+        json.dumps(clamav_result) if isinstance(clamav_result, dict) else clamav_result,
+        json.dumps(yara_result) if isinstance(yara_result, dict) else yara_result
     ))
     
     analysis_id = cursor.lastrowid
@@ -321,6 +329,12 @@ def get_analysis_by_id(analysis_id: int):
         'risk_score': row[11],
         'risk_level': row[12],
         'risk_reasons': json.loads(row[13]) if row[13] else [],
+        'risk_analysis': {
+            'risk_score': row[11],
+            'risk_level': row[12],
+            'risk_reasons': json.loads(row[13]) if row[13] else [],
+            'total_checks': row[14]
+        },
         'total_checks': row[14],
         'clamav_result': json.loads(row[15]) if row[15] else {},
         'yara_result': json.loads(row[16]) if row[16] else {},

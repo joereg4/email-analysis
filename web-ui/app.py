@@ -110,12 +110,27 @@ def upload_email(file):
         st.error(f"Upload failed: {str(e)}")
         return None
 
+def parse_scan_results(data):
+    """Parse JSON strings for scan results in any data object"""
+    if 'clamav_result' in data and isinstance(data['clamav_result'], str):
+        try:
+            data['clamav_result'] = json.loads(data['clamav_result'])
+        except:
+            data['clamav_result'] = {}
+    if 'yara_result' in data and isinstance(data['yara_result'], str):
+        try:
+            data['yara_result'] = json.loads(data['yara_result'])
+        except:
+            data['yara_result'] = {}
+    return data
+
 def get_analysis_details(analysis_id):
     """Get detailed analysis results"""
     try:
         response = requests.get(f"{API_BASE_URL}/analysis/{analysis_id}")
         if response.status_code == 200:
-            return response.json()
+            data = response.json()
+            return parse_scan_results(data)
         return None
     except:
         return None
@@ -175,6 +190,7 @@ def main():
                 with st.spinner("Uploading and analyzing email..."):
                     result = upload_email(uploaded_file)
                     if result:
+                        result = parse_scan_results(result)
                         st.success(f"✅ Email uploaded successfully! Analysis ID: {result.get('analysis_id')}")
                         
                         # Display results immediately
