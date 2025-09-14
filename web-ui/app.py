@@ -257,7 +257,7 @@ def main():
             st.metric("High Risk", summary.get('high_risk', 0))
     
     # Main content
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "📧 Email List", "🔍 Analysis Details", "⚙️ Settings"])
+    tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "📧 Email List", "⚙️ Settings"])
     
     with tab1:
         st.header("📊 Analysis Dashboard")
@@ -506,6 +506,60 @@ def main():
                                 st.warning(f"⚠️ {status}")
                             st.write(f"Details: {yara.get('message', 'No details')}")
                         
+                        # Risk score gauge
+                        st.write("**📊 Risk Score Gauge**")
+                        fig = go.Figure(go.Indicator(
+                            mode = "gauge+number",
+                            value = risk_score,
+                            domain = {'x': [0, 1], 'y': [0, 1]},
+                            title = {'text': "Risk Score"},
+                            gauge = {
+                                'axis': {'range': [None, 100]},
+                                'bar': {'color': get_risk_color(risk_level)},
+                                'steps': [
+                                    {'range': [0, 30], 'color': "lightgray"},
+                                    {'range': [30, 60], 'color': "yellow"},
+                                    {'range': [60, 80], 'color': "orange"},
+                                    {'range': [80, 100], 'color': "red"}
+                                ],
+                                'threshold': {
+                                    'line': {'color': "red", 'width': 4},
+                                    'thickness': 0.75,
+                                    'value': 90
+                                }
+                            }
+                        ))
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # AI Analysis
+                        if full_analysis.get('summary'):
+                            st.write("**🤖 AI Analysis**")
+                            st.write(f"**Summary:** {full_analysis.get('summary', '')}")
+                            st.write(f"**Risk Assessment:** {full_analysis.get('ai_risk_assessment', '')}")
+                            st.write(f"**Recommendations:** {full_analysis.get('recommendations', '')}")
+                        
+                        # Threats detected
+                        if full_analysis.get('threats_detected'):
+                            st.write("**⚠️ Threats Detected**")
+                            for threat in full_analysis.get('threats_detected', []):
+                                st.write(f"• {threat}")
+                        
+                        # Attachments
+                        if full_analysis.get('attachments'):
+                            st.write("**📎 Attachments**")
+                            for attachment in full_analysis.get('attachments', []):
+                                st.write(f"• {attachment.get('filename', 'Unknown')} ({attachment.get('size', 0)} bytes)")
+                                if attachment.get('quarantined'):
+                                    st.warning("🚫 This attachment has been quarantined")
+                        
+                        # URLs
+                        if full_analysis.get('urls'):
+                            st.write("**🔗 URLs Found**")
+                            for url in full_analysis.get('urls', []):
+                                st.write(f"• {url.get('url', 'Unknown')}")
+                                if url.get('risk_level'):
+                                    st.write(f"  Risk: {url.get('risk_level', 'unknown')}")
+                        
                         # Email content preview
                         body_preview = full_analysis.get('body_preview', '')
                         if body_preview:
@@ -522,90 +576,6 @@ def main():
             st.info("No analyses found. Upload an email to get started!")
     
     with tab3:
-        st.header("🔍 Analysis Details")
-        
-        if 'selected_analysis' in st.session_state:
-            analysis_id = st.session_state.selected_analysis
-            analysis = get_analysis_details(analysis_id)
-            
-            if analysis:
-                # Basic info
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.subheader("📧 Email Information")
-                    st.write(f"**Filename:** {analysis.get('filename', 'Unknown')}")
-                    st.write(f"**Subject:** {analysis.get('subject', 'No subject')}")
-                    st.write(f"**From:** {analysis.get('sender', 'Unknown sender')}")
-                    st.write(f"**Date:** {analysis.get('created_at', 'Unknown date')}")
-                    st.write(f"**Status:** {analysis.get('status', 'Unknown')}")
-                
-                with col2:
-                    st.subheader("🎯 Risk Assessment")
-                    risk_level = analysis.get('risk_level', 'unknown')
-                    risk_score = analysis.get('risk_score', 0)
-                    
-                    st.markdown(f"**Risk Level:** {get_risk_icon(risk_level)} {risk_level.upper()}")
-                    st.markdown(f"**Risk Score:** {risk_score:.1f}/100")
-                    
-                    # Risk score gauge
-                    fig = go.Figure(go.Indicator(
-                        mode = "gauge+number",
-                        value = risk_score,
-                        domain = {'x': [0, 1], 'y': [0, 1]},
-                        title = {'text': "Risk Score"},
-                        gauge = {
-                            'axis': {'range': [None, 100]},
-                            'bar': {'color': get_risk_color(risk_level)},
-                            'steps': [
-                                {'range': [0, 30], 'color': "lightgray"},
-                                {'range': [30, 60], 'color': "yellow"},
-                                {'range': [60, 80], 'color': "orange"},
-                                {'range': [80, 100], 'color': "red"}
-                            ],
-                            'threshold': {
-                                'line': {'color': "red", 'width': 4},
-                                'thickness': 0.75,
-                                'value': 90
-                            }
-                        }
-                    ))
-                    st.plotly_chart(fig, use_container_width=True)
-                
-                # AI Analysis
-                if analysis.get('summary'):
-                    st.subheader("🤖 AI Analysis")
-                    st.write(f"**Summary:** {analysis.get('summary', '')}")
-                    st.write(f"**Risk Assessment:** {analysis.get('ai_risk_assessment', '')}")
-                    st.write(f"**Recommendations:** {analysis.get('recommendations', '')}")
-                
-                # Threats detected
-                if analysis.get('threats_detected'):
-                    st.subheader("⚠️ Threats Detected")
-                    for threat in analysis.get('threats_detected', []):
-                        st.write(f"• {threat}")
-                
-                # Attachments
-                if analysis.get('attachments'):
-                    st.subheader("📎 Attachments")
-                    for attachment in analysis.get('attachments', []):
-                        st.write(f"• {attachment.get('filename', 'Unknown')} ({attachment.get('size', 0)} bytes)")
-                        if attachment.get('quarantined'):
-                            st.warning("🚫 This attachment has been quarantined")
-                
-                # URLs
-                if analysis.get('urls'):
-                    st.subheader("🔗 URLs Found")
-                    for url in analysis.get('urls', []):
-                        st.write(f"• {url.get('url', 'Unknown')}")
-                        if url.get('risk_level'):
-                            st.write(f"  Risk: {url.get('risk_level', 'unknown')}")
-            else:
-                st.error("Failed to load analysis details")
-        else:
-            st.info("Select an analysis from the Email List tab to view details")
-    
-    with tab4:
         st.header("⚙️ Settings")
         
         st.subheader("🔧 System Status")
