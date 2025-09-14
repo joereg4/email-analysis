@@ -421,34 +421,7 @@ def main():
                 title = f"📧 {subject} | {formatted_date} | {risk_icon} {risk_level.upper()}"
                 
                 with st.expander(title):
-                    col1, col2 = st.columns([2, 1])
-                    
-                    with col1:
-                        st.write(f"**Subject:** {analysis.get('subject', 'No subject')}")
-                        st.write(f"**From:** {analysis.get('sender', 'Unknown sender')}")
-                        st.write(f"**Date:** {analysis.get('created_at', 'Unknown date')}")
-                        st.write(f"**Status:** {analysis.get('status', 'Unknown')}")
-                        st.write(f"**Risk Score:** {analysis.get('risk_score', 0):.1f}/100")
-                        
-                        if analysis.get('summary'):
-                            st.write(f"**Summary:** {analysis.get('summary', '')[:200]}...")
-                    
-                    with col2:
-                        # Action buttons
-                        if st.button(f"🔍 View Details", key=f"view_{analysis['id']}"):
-                            # Toggle expanded view for this analysis
-                            if f"expanded_{analysis['id']}" not in st.session_state:
-                                st.session_state[f"expanded_{analysis['id']}"] = True
-                            else:
-                                st.session_state[f"expanded_{analysis['id']}"] = not st.session_state[f"expanded_{analysis['id']}"]
-                            st.rerun()
-                
-                # Show expanded details if this analysis is expanded
-                if f"expanded_{analysis['id']}" in st.session_state and st.session_state[f"expanded_{analysis['id']}"]:
-                    st.markdown("---")
-                    st.subheader(f"🔍 Detailed Analysis: {analysis.get('subject', 'No Subject')}")
-                    
-                    # Get full analysis details
+                    # Get full analysis details directly
                     full_analysis = get_analysis_details(analysis['id'])
                     if full_analysis:
                         # Basic info
@@ -468,7 +441,8 @@ def main():
                             risk_level = full_analysis.get('risk_level', 'unknown')
                             risk_score = full_analysis.get('risk_score', 0)
                             
-                            st.markdown(f"**Risk Level:** {get_risk_icon(risk_level)} {risk_level.upper()}")
+                            risk_color = get_risk_color(risk_level)
+                            st.markdown(f"**Risk Level:** {get_risk_icon(risk_level)} <span style='color: {risk_color}; font-weight: bold;'>{risk_level.upper()}</span>", unsafe_allow_html=True)
                             st.markdown(f"**Risk Score:** {risk_score}/100")
                             
                             # Risk reasons
@@ -565,11 +539,6 @@ def main():
                         if body_preview:
                             st.write("**📄 Email Content Preview**")
                             st.text_area("Body Preview", body_preview, height=200, disabled=True, key=f"preview_{analysis['id']}")
-                        
-                        # Close button
-                        if st.button(f"❌ Close Details", key=f"close_{analysis['id']}"):
-                            st.session_state[f"expanded_{analysis['id']}"] = False
-                            st.rerun()
                     else:
                         st.error("Failed to load detailed analysis")
         else:
