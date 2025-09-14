@@ -57,11 +57,6 @@ A comprehensive email security analysis platform with advanced scanning capabili
 
 2. **Start the services**
    ```bash
-   ./setup.sh
-   ```
-   
-   Or manually:
-   ```bash
    docker-compose up -d
    ```
 
@@ -70,6 +65,8 @@ A comprehensive email security analysis platform with advanced scanning capabili
    - **Simple UI**: Open `src/ui/simple-ui.html` in your browser
    - **API**: `http://localhost:8080`
    - **API Docs**: `http://localhost:8080/docs`
+
+That's it! No additional setup required.
 
 ### First Analysis
 

@@ -56,7 +56,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # API Configuration
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8080")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://api:8080")
 
 def check_api_health():
     """Check if the API is running"""
@@ -69,9 +69,10 @@ def check_api_health():
 def get_analyses():
     """Get all email analyses"""
     try:
-        response = requests.get(f"{API_BASE_URL}/analyses")
+        response = requests.get(f"{API_BASE_URL}/history")
         if response.status_code == 200:
-            return response.json()
+            data = response.json()
+            return data.get('history', [])
         return []
     except:
         return []
@@ -79,9 +80,20 @@ def get_analyses():
 def get_analysis_summary():
     """Get analysis summary statistics"""
     try:
-        response = requests.get(f"{API_BASE_URL}/summary")
+        response = requests.get(f"{API_BASE_URL}/history")
         if response.status_code == 200:
-            return response.json()
+            data = response.json()
+            history = data.get('history', [])
+            # Calculate summary from history
+            total = len(history)
+            risk_counts = {}
+            for analysis in history:
+                risk = analysis.get('risk_level', 'UNKNOWN')
+                risk_counts[risk] = risk_counts.get(risk, 0) + 1
+            return {
+                'total_analyses': total,
+                'risk_distribution': risk_counts
+            }
         return None
     except:
         return None
@@ -101,31 +113,14 @@ def upload_email(file):
 def get_analysis_details(analysis_id):
     """Get detailed analysis results"""
     try:
-        response = requests.get(f"{API_BASE_URL}/analyses/{analysis_id}")
+        response = requests.get(f"{API_BASE_URL}/analysis/{analysis_id}")
         if response.status_code == 200:
             return response.json()
         return None
     except:
         return None
 
-def quarantine_analysis(analysis_id, reason):
-    """Quarantine an analysis"""
-    try:
-        response = requests.post(
-            f"{API_BASE_URL}/analyses/{analysis_id}/quarantine",
-            json={"reason": reason}
-        )
-        return response.status_code == 200
-    except:
-        return False
-
-def delete_analysis(analysis_id):
-    """Delete an analysis"""
-    try:
-        response = requests.delete(f"{API_BASE_URL}/analyses/{analysis_id}")
-        return response.status_code == 200
-    except:
-        return False
+# Note: Quarantine and delete functions removed as these endpoints don't exist in the API
 
 def get_risk_color(risk_level):
     """Get color for risk level"""
