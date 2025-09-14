@@ -19,18 +19,19 @@ A comprehensive email security analysis platform with advanced scanning capabili
 - **Phishing Detection**: Identifies common attack patterns
 
 ### User Interface
-- **Drag & Drop Upload**: Easy file handling
-- **Real-time Analysis**: Live scanning results
-- **History View**: Browse past analyses
-- **Detailed Reports**: Comprehensive threat assessment
-- **Responsive Design**: Works on desktop and mobile
+- **Streamlit Web Dashboard**: Modern, responsive interface
+- **Drag & Drop Upload**: Easy file handling with progress indicators
+- **One-Click Analysis**: Simple dropdown to view complete details
+- **History View**: Browse past analyses with risk level filtering
+- **Interactive Charts**: Risk score gauges and visual indicators
+- **Real-time Results**: Live scanning with detailed threat assessment
 
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Web UI        │    │   FastAPI       │    │   Database      │
-│   (HTML/JS)     │◄──►│   (Python)      │◄──►│   (SQLite)      │
+│   Streamlit     │    │   FastAPI       │    │   Database      │
+│   Web Dashboard │◄──►│   (Python)      │◄──►│   (SQLite)      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                               │
                               ▼
@@ -61,8 +62,7 @@ A comprehensive email security analysis platform with advanced scanning capabili
    ```
 
 3. **Access the application**
-   - **Web UI**: `http://localhost:8501` (Streamlit dashboard)
-   - **Simple UI**: Open `src/ui/simple-ui.html` in your browser
+   - **Web Dashboard**: `http://localhost:8501` (Streamlit interface)
    - **API**: `http://localhost:8080`
    - **API Docs**: `http://localhost:8080/docs`
 
@@ -70,27 +70,28 @@ That's it! No additional setup required.
 
 ### First Analysis
 
-1. Open the Web UI
-2. Drag and drop a `.eml` file
-3. Click "Analyze Email"
-4. View results including:
-   - Email details
-   - Risk assessment
-   - ClamAV scan results
-   - YARA rule matches
+1. Open the Web Dashboard at `http://localhost:8501`
+2. Go to the "📧 Upload Email" tab
+3. Drag and drop a `.eml` file or click to browse
+4. Click "Analyze Email" and wait for processing
+5. View results in the "📊 Email List" tab:
+   - Click any dropdown arrow to see complete analysis
+   - Risk assessment with color-coded levels
+   - ClamAV and YARA scan results
+   - Interactive risk score gauge
+   - AI-powered threat analysis
 
 ## 📁 Project Structure
 
 ```
 email-analysis/
 ├── src/
-│   ├── api/                 # API source code
-│   │   └── scanning-api.py  # Main API with scanning
-│   ├── ui/                  # Web interface
-│   │   └── simple-ui.html   # Main UI
-│   └── tests/               # Test scripts
+│   └── api/                 # API source code
+│       └── scanning-api.py  # Main API with scanning
+├── web-ui/                  # Streamlit web dashboard
+│   ├── app.py              # Main Streamlit application
+│   └── requirements.txt    # Python dependencies
 ├── samples/                 # Sample email files
-├── scripts/                 # Build and utility scripts
 ├── docs/                    # Documentation
 ├── yara_rules/              # YARA rule definitions
 ├── data/                    # Database and logs
@@ -143,12 +144,11 @@ curl http://localhost:8080/analysis/1
 
 ### Run Test Suite
 ```bash
-# Test all features
-./src/tests/test-scanning.sh
+# Test API endpoints
+curl -X POST -F "file=@samples/safe_email.eml" http://localhost:8080/upload
 
-# Test specific components
-./src/tests/test-database.sh
-./src/tests/test_features.sh
+# Test web dashboard
+# Open http://localhost:8501 and upload sample files
 ```
 
 ### Sample Files
@@ -181,9 +181,8 @@ Test with provided samples in `samples/`:
 
 ### Adding New Features
 1. Update API in `src/api/`
-2. Modify UI in `src/ui/`
-3. Add tests in `src/tests/`
-4. Update documentation
+2. Modify web dashboard in `web-ui/`
+3. Update documentation
 
 ### Custom YARA Rules
 Add new rules to `yara_rules/malware_signatures.yar`:

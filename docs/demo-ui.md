@@ -1,44 +1,54 @@
-# 🎉 Email Analysis UI Demo
+# 🎉 Email Analysis Streamlit Dashboard
 
 ## What We Built
-A simple, clean web interface for the Email Analysis API that includes:
+A modern, responsive Streamlit web dashboard for the Email Analysis API that includes:
 
 ### ✅ Features
-- **Drag & Drop Upload**: Easy file upload with visual feedback
-- **File Selection**: Click to browse and select files
+- **Drag & Drop Upload**: Easy file upload with progress indicators
+- **One-Click Analysis**: Simple dropdown to view complete details
 - **Real-time Analysis**: Connects to our working API
-- **Visual Results**: Color-coded risk levels and detailed analysis
-- **Sample Files**: Quick access to test different email types
+- **Visual Results**: Color-coded risk levels and interactive charts
+- **History Management**: Browse and filter past analyses
+- **Interactive Charts**: Risk score gauges and visual indicators
 
 ### 🎨 UI Components
-- **Upload Area**: Drag and drop zone with hover effects
-- **Email Information**: Displays subject, sender, recipient, date, body preview
-- **Risk Analysis**: Color-coded risk levels (SAFE, LOW, MEDIUM, HIGH)
-- **Risk Reasons**: Detailed list of why an email is flagged as suspicious
-- **Sample Files**: Quick buttons to test with different email types
+- **Upload Tab**: Drag and drop zone with file selection
+- **Email List Tab**: Browse all analyses with risk level filtering
+- **Settings Tab**: Configuration and system information
+- **Risk Assessment**: Color-coded risk levels (SAFE, LOW, MEDIUM, HIGH, CRITICAL)
+- **Detailed Analysis**: Complete breakdown with ClamAV and YARA results
+- **Interactive Gauge**: Visual risk score representation
 
 ### 🧪 How to Test
-1. **Open the UI**: The file `simple-ui.html` should be open in your browser
+1. **Start the Dashboard**: `http://localhost:8501`
 2. **Upload a file**: 
-   - Drag and drop one of the sample .eml files onto the upload area
-   - Or click "Choose File" and select a file
-3. **Click "Analyze Email"**: The UI will send the file to our API
-4. **View Results**: See the email details and risk analysis
+   - Go to "📧 Upload Email" tab
+   - Drag and drop one of the sample .eml files
+   - Or click "Browse files" and select a file
+3. **Click "Analyze Email"**: The dashboard will process the file
+4. **View Results**: 
+   - Go to "📊 Email List" tab
+   - Click any dropdown arrow to see complete analysis
+   - View risk assessment, scan results, and interactive charts
 
 ### 📧 Test Files Available
 - `safe_email.eml` - Business email (should show SAFE risk level)
 - `suspicious_email.eml` - Phishing attempt (should show HIGH risk level)  
-- `sample.eml` - Basic test email (should show SAFE risk level)
+- `fiji_suspicious.eml` - International threat (should show HIGH risk level)
+- `test_yara.eml` - YARA rule triggers (should show HIGH risk level)
 
 ### 🔗 API Connection
-- UI connects to: `http://localhost:8080`
+- Dashboard connects to: `http://localhost:8080`
 - Uses the same API endpoints we tested with curl
 - Real-time analysis with visual feedback
+- Persistent storage in SQLite database
 
-## Next Steps
-The UI is now working and connected to our proven API. You can:
-1. Test it with the sample files
-2. Upload your own .eml files
-3. See the risk analysis in a user-friendly format
+## Key Improvements
+The Streamlit dashboard provides:
+1. **Simplified UX**: One click to view complete analysis details
+2. **Better Organization**: Tabbed interface for different functions
+3. **Visual Appeal**: Modern design with charts and color coding
+4. **Complete Analysis**: All features in one place
+5. **History Management**: Easy browsing of past analyses
 
-This gives you a complete working system: API + UI + Testing!
+This gives you a complete working system: API + Modern Dashboard + Testing!

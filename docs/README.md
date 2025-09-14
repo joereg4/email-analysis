@@ -1,34 +1,31 @@
 # Email Analysis Sandbox
 
-A comprehensive email security analysis platform built with Docker, featuring AI-powered threat detection, multiple scanning engines, and automated processing workflows.
+A comprehensive email security analysis platform built with Docker, featuring advanced threat detection, multiple scanning engines, and a modern web interface.
 
 ## Features
 
-- **Automated Email Processing**: Drop `.eml` files into the inbox folder for automatic analysis
-- **Multi-Engine Scanning**: ClamAV, YARA, EXIF, OCR, and URL analysis
-- **AI-Powered Analysis**: OpenAI integration for intelligent threat assessment
-- **Real-time Monitoring**: File watcher automatically processes new emails
-- **Comprehensive Reporting**: Detailed analysis results with risk scoring
-- **Quarantine System**: Automatic isolation of suspicious content
-- **REST API**: Full API for integration and management
-- **SQLite Database**: Persistent storage of analysis results
+- **Streamlit Web Dashboard**: Modern, responsive interface for email analysis
+- **Multi-Engine Scanning**: ClamAV antivirus and YARA rule-based detection
+- **One-Click Analysis**: Simple dropdown interface to view complete details
+- **Risk Assessment**: Color-coded risk levels with interactive gauges
+- **Comprehensive Reporting**: Detailed analysis results with threat indicators
+- **REST API**: Full API for integration and programmatic access
+- **SQLite Database**: Persistent storage of analysis results and history
+- **Docker Containerization**: Isolated, secure scanning environment
 
 ## Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   File Watcher  │    │   FastAPI API   │    │  Background     │
-│                 │    │                 │    │  Worker         │
-│ Monitors inbox  │───▶│ Orchestrates    │───▶│ Processes       │
-│ for new emails  │    │ analysis flow   │    │ analysis tasks  │
+│   Streamlit     │    │   FastAPI       │    │   Database      │
+│   Web Dashboard │◄──►│   (Python)      │◄──►│   (SQLite)      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │                        │
-                                ▼                        ▼
-                       ┌─────────────────┐    ┌─────────────────┐
-                       │   SQLite DB     │    │  Scanning       │
-                       │                 │    │  Engines        │
-                       │ Stores results  │    │ ClamAV/YARA/OCR │
-                       └─────────────────┘    └─────────────────┘
+                              │
+                              ▼
+                       ┌─────────────────┐
+                       │   ClamAV        │
+                       │   + YARA        │
+                       └─────────────────┘
 ```
 
 ## Quick Start
@@ -40,18 +37,17 @@ git clone <repository-url>
 cd email-analysis
 ```
 
-### 2. Configure Environment
+### 2. Configure Environment (Optional)
 
-Copy the example configuration and update with your API keys:
+Create a `.env` file for optional API keys:
 
 ```bash
-cp config.env .env
-# Edit .env with your API keys
+# Optional: External APIs
+OPENAI_API_KEY=your_key_here
+VIRUSTOTAL_API_KEY=your_key_here
 ```
 
-Required API keys:
-- `OPENAI_API_KEY`: Your OpenAI API key for AI analysis
-- `VIRUSTOTAL_API_KEY`: Your VirusTotal API key for URL analysis
+Note: The system works without these keys, but they enable additional features.
 
 ### 3. Start the Services
 
@@ -59,23 +55,17 @@ Required API keys:
 docker-compose up -d
 ```
 
-### 4. Upload Emails
+### 4. Upload and Analyze Emails
 
-Drop `.eml` files into the `data/inbox/` directory. The system will automatically:
-1. Parse the email content
-2. Scan attachments with ClamAV and YARA
-3. Extract EXIF data from images
-4. Perform OCR on images and PDFs
-5. Analyze URLs with VirusTotal
-6. Generate AI-powered risk assessment
-
-### 5. View Results
-
-**🌐 Streamlit Web UI (Recommended)**: `http://localhost:8501`
-- User-friendly interface for uploading emails
-- Visual dashboards and charts
-- Easy-to-understand risk indicators
-- One-click actions (quarantine, delete, etc.)
+**🌐 Streamlit Web Dashboard (Recommended)**: `http://localhost:8501`
+1. Go to the "📧 Upload Email" tab
+2. Drag and drop a `.eml` file or click to browse
+3. Click "Analyze Email" and wait for processing
+4. View results in the "📊 Email List" tab:
+   - Click any dropdown arrow to see complete analysis
+   - Risk assessment with color-coded levels
+   - ClamAV and YARA scan results
+   - Interactive risk score gauge
 
 **📡 API Access**: `http://localhost:8080`
 - REST API for programmatic access
@@ -86,18 +76,9 @@ Drop `.eml` files into the `data/inbox/` directory. The system will automaticall
 ### Core Endpoints
 
 - `GET /` - Health check
-- `POST /upload` - Upload email file
-- `GET /analyses` - List all analyses
-- `GET /analyses/{id}` - Get specific analysis
-- `GET /summary` - Get analysis summary statistics
-
-### Analysis Endpoints
-
-- `GET /analyses/{id}/attachments` - Get attachment details
-- `GET /analyses/{id}/urls` - Get URL analysis results
-- `GET /analyses/{id}/logs` - Get scan logs
-- `POST /analyses/{id}/quarantine` - Quarantine analysis
-- `DELETE /analyses/{id}` - Delete analysis
+- `POST /upload` - Upload and analyze email file
+- `GET /history` - Get analysis history
+- `GET /analysis/{id}` - Get detailed analysis results
 
 ## Configuration
 
@@ -105,20 +86,9 @@ Drop `.eml` files into the `data/inbox/` directory. The system will automaticall
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `OPENAI_API_KEY` | OpenAI API key for AI analysis | Required |
+| `OPENAI_API_KEY` | OpenAI API key for AI analysis | Optional |
 | `VIRUSTOTAL_API_KEY` | VirusTotal API key for URL analysis | Optional |
-| `DATABASE_URL` | SQLite database path | `sqlite:///app/data/db/email_analysis.db` |
-| `REDIS_URL` | Redis connection URL | `redis://redis:6379` |
-| `CLAMAV_HOST` | ClamAV server host | `clamav` |
-| `CLAMAV_PORT` | ClamAV server port | `3310` |
-
-### File Paths
-
-- `INBOX_PATH`: Directory to monitor for new emails
-- `QUARANTINE_PATH`: Directory for quarantined files
-- `ARTIFACTS_PATH`: Directory for analysis artifacts
-- `DB_PATH`: Database directory
-- `LOGS_PATH`: Log files directory
+| `DATABASE_URL` | SQLite database path | `sqlite:///app/data/email_analysis.db` |
 
 ## Scanning Engines
 
@@ -133,29 +103,12 @@ Drop `.eml` files into the `data/inbox/` directory. The system will automaticall
 - Suspicious pattern detection
 - Extensible rule system
 
-### EXIF Analysis
-- Image metadata extraction
-- GPS location detection
-- Camera information analysis
-- Suspicious metadata detection
-
-### OCR (Optical Character Recognition)
-- Text extraction from images and PDFs
-- Suspicious content detection
-- Phishing keyword analysis
-- Malware indicator identification
-
-### URL Analysis
-- VirusTotal integration
-- Domain reputation checking
-- Suspicious URL pattern detection
-- WHOIS information analysis
-
-### OpenAI Integration
-- Intelligent content analysis
-- Risk assessment and scoring
-- Threat identification
-- Actionable recommendations
+### Risk Assessment
+- Multi-factor risk scoring algorithm
+- Color-coded risk levels (SAFE, LOW, MEDIUM, HIGH, CRITICAL)
+- International domain detection
+- Phishing pattern recognition
+- Suspicious content analysis
 
 ## Database Schema
 
@@ -164,74 +117,49 @@ Drop `.eml` files into the `data/inbox/` directory. The system will automaticall
 - Metadata, headers, and content
 - Risk scoring and assessment
 - Processing status and timestamps
-
-### Attachment
-- Attachment details and scan results
-- File hashes and metadata
-- Quarantine status
-
-### URLAnalysis
-- URL analysis results
-- VirusTotal and WHOIS data
-- Reputation scores
-
-### ScanLog
-- Detailed scan operation logs
-- Performance metrics
-- Error tracking
+- ClamAV and YARA scan results
 
 ## Security Features
-
-### Quarantine System
-- Automatic isolation of suspicious content
-- Configurable quarantine triggers
-- Safe storage of potentially malicious files
 
 ### Risk Scoring
 - Multi-factor risk assessment
 - Weighted scoring algorithm
 - Configurable risk thresholds
 
-### Access Control
-- API-based access control
-- Secure file handling
-- Audit logging
+### Secure Scanning
+- Docker containerization for isolation
+- ClamAV antivirus protection
+- YARA rule-based detection
+- Safe handling of potentially malicious files
 
 ## Development
 
-### Adding New Scanners
-
-1. Create scanner module in `services/scanners/`
-2. Implement scanner interface
-3. Add to `EmailScanner` class
-4. Update worker to use new scanner
-
 ### Adding New YARA Rules
 
-1. Add `.yar` files to `services/scanners/yara_rules/`
+1. Add `.yar` files to `yara_rules/`
 2. Rules are automatically loaded on startup
 3. Use YARA syntax for rule definition
 
 ### Customizing Analysis
 
-1. Modify `EmailParser` for email parsing
-2. Update `URLAnalyzer` for URL analysis
-3. Customize OpenAI prompts in worker
-4. Add new risk scoring factors
+1. Modify `scanning-api.py` for API changes
+2. Update `web-ui/app.py` for UI changes
+3. Add new risk scoring factors
+4. Customize threat detection patterns
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **ClamAV Connection Failed**
-   - Check ClamAV service status
+   - Check ClamAV service status: `docker-compose logs api`
    - Verify network connectivity
    - Check firewall settings
 
-2. **OpenAI API Errors**
-   - Verify API key configuration
-   - Check API quota and limits
-   - Review rate limiting
+2. **Web Dashboard Not Loading**
+   - Check Streamlit service: `docker-compose logs web-ui`
+   - Verify port 8501 is available
+   - Check browser console for errors
 
 3. **File Upload Issues**
    - Check file permissions
@@ -245,13 +173,13 @@ Drop `.eml` files into the `data/inbox/` directory. The system will automaticall
 
 ### Logs
 
-- API logs: `data/logs/api.log`
-- Worker logs: `data/logs/worker.log`
-- Watcher logs: `data/logs/watcher.log`
+- API logs: `docker-compose logs api`
+- Web UI logs: `docker-compose logs web-ui`
+- All services: `docker-compose logs`
 
 ### Monitoring
 
-- Health check: `GET /`
+- Health check: `GET http://localhost:8080/`
 - Service status: `docker-compose ps`
 - Resource usage: `docker stats`
 
